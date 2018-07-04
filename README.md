@@ -1,1 +1,1 @@
-# chip8_interpreter in C 
+# chip8_interpreter in c++
