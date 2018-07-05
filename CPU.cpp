@@ -3,6 +3,7 @@
 //Program starts at 0x200 (PC)
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "include/CPU.h"
 
  unsigned char chip8_fontset[80] =
@@ -26,8 +27,8 @@
  };
 
  unsigned short opcode; //2 bytes for current opcode
-
- unsigned char memory[4096]; //4k of memory
+ const int memSize = 4096;
+ unsigned char memory[memSize]; //4k of memory
 
  unsigned char V[16]; //General purpose registers v0 - vE
 
@@ -52,7 +53,8 @@
  unsigned char sound_timer;
  
  //Stack and stack pointer
- unsigned short stack[16];
+ const int stackSize = 16;
+ unsigned short stack[stackSize];
  unsigned short sp;
  
  //Keypad (0x0-0xF)
@@ -71,14 +73,25 @@
 	 
 	 //display
 	 //stack
+	 for(int i = 0; i < stackSize; ++i) {
+		 stack[i] = 0;
+	 }
 	 //registers v0=vF (vF is carry register)
+	 //memory
+	 for(int i = 0; i < memSize; ++i) 
+	 {
+		 memory[i] = 0;
+	 }
 	 
 	 //Load font
-	 for(int i = 80; i < 160; ++i) {
-		 memory[i] = chip8_fontset[i - 80];
+	 for(int i = 0; i < 80; ++i) 
+	 {
+		 memory[i] = chip8_fontset[i];
 	 }
 	 
 	 //Timers
+	 delay_timer = 0;
+	 sound_timer = 0;
 	
  }
  
@@ -138,17 +151,93 @@
 					printf("Unknown opcode [0x0000]: 0x%X\n", opcode);          
 			}
 		break;
+		
+		 case 0xF000:
+		  switch(opcode & 0x00FF) 
+		  {
+			  
+		   /*
+			* Opcode 0xFX33
+			* Binary encoded decimal representations of VX at address I. + 1, + 2
+			*/
+			//TJA's Solution
+			case 0x0033:
+		
+			memory[I] = V[(opcode & 0x0F00) >> 8] / 100;
+			memory[I + 1] = (V[(opcode & 0x0F00) >> 8] / 10) % 10;
+			memory[I + 2] = (V[(opcode & 0x0F00) >> 8] % 100) % 10;
+			pc += 2;
+		
+			break;
+			
+			/*
+			 * Opcode 0xFX65
+			 */
+			 case 0x0065:
+			 {
+			 unsigned int X = opcode & 0x0F00;
+			 for(int i = 0; i <= X; ++i) {
+				memory[I] = V[i];
+				I += 1;
+			 }
+			 pc+=2;
+			 
+			 break;
+			 
+			 /*
+			  * Opcode 0xFX29 
+			  * Set "I" to the location of sprite for character
+			  * in VX. 4x5 font
+			  *
+			  */
+			  case 0x0029:
+			  //TODO:
+			  break;
+			 }
+			
+			
+			default:
+					printf("Unknown opcode [0x0000]: 0x%X\n", opcode);          
+		  }
+		  break;
 		/*
-		 * Opcode 0xFX33
-	     * Binary encoded decimal representations of VX at address I. + 1, + 2
+		 * Opcode 0x6XNN
 		 */
-		  //TJA's Solution
-		case 0x0033:
-		memory[I] = V[(opcode & 0x0F00) >> 8] / 100;
-		memory[I + 1] = (V[(opcode & 0x0F00) >> 8] / 10) % 10;
-		memory[I + 2] = (V[(opcode & 0x0F00) >> 8] % 100) % 10;
+		case 0x6000:
+		V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
 		pc += 2;
 		break;
+		
+		/*
+		 * Opcode 0xDXYN
+		 */
+		 case 0xD000:	
+		 {
+
+        unsigned short x = V[(opcode & 0x0F00) >> 8];
+		unsigned short y = V[(opcode & 0x00F0) >> 4];
+		unsigned short height = opcode & 0x000F;
+		unsigned short pixel;
+ 
+		V[0xF] = 0;
+		for (int yline = 0; yline < height; yline++)
+		{
+			pixel = memory[I + yline];
+			for(int xline = 0; xline < 8; xline++)
+			{
+				if((pixel & (0x80 >> xline)) != 0)
+			{
+			if(gfx[(x + xline + ((y + yline) * 64))] == 1)
+			V[0xF] = 1;                                 
+			gfx[x + xline + ((y + yline) * 64)] ^= 1;
+			}
+			}
+       }
+ 
+         //drawFlag = true;
+         pc += 2;
+	 }
+         break;
 		 
 		 default:
 		   printf("Unknown opcode: 0x%X\n", opcode);
@@ -167,27 +256,62 @@
 	  }
  }
  //In progress
- void CPU::loadFile(char * fN)
+ bool CPU::loadFile(char * fN)
  {
-	 int bufferSize = 4;
-	 char buffer[bufferSize];
+	 initialize();
+	 
+	 char * buffer;
 	 
 	 FILE * pFile;
 	 
 	 pFile = fopen(fN, "rb");
 	 puts(fN);
 	 
+	  
+	 
 	 if(pFile != NULL)
 	 {
-		 setvbuf(pFile, NULL, _IOFBF, bufferSize);
+		// setvbuf(pFile, buffer, _IOFBF, 4096);
 		 
-		 for(int i = 0; i < bufferSize; ++i) {
+		 //Filesize
+		 fseek(pFile,0,SEEK_END);
+		 long size = ftell(pFile);
+		 rewind(pFile); //Set pos to beginning
+		 buffer = (char*) malloc(sizeof(char) * size);
+		 if(buffer == NULL)
+		 {
+			 fputs("Ram error", stderr);
+		 }
+		 
+		 size_t res = fread(buffer, 1, size, pFile);
+		 
+		 if(res != size) 
+		 {
+			 fputs("Error reading", stderr);
+			 return false;
+		 }
+		 
+		 if((memSize-512) > size)
+		 {
+		 for(int i = 0; i < size; ++i) 
+		 {
 		 memory[i + 512] = buffer[i];
-		}
+		 }
+		 } 
+		 else
+		 {
+			 printf("Rom too large!");
+		 }
+		
+		
 		 
 		 fclose(pFile);
+		 free(buffer);
+		 
+		 return true;
 	 }
 	 
+	
 	 
 	 
  }
