@@ -3,7 +3,7 @@
 //Program starts at 0x200 (PC)
 
 #include <stdio.h>
-#include "CPU.h"
+#include "include/CPU.h"
 
  unsigned char chip8_fontset[80] =
  { 
@@ -87,40 +87,105 @@
 	 //Fetch
 	 opcode = memory[pc] << 8 | memory[pc + 1];
 	 
-	 //Decode
-	 
-	 //Case where ANNN
-	 if(0xF000 & opcode == 0xA000) {
-		 //Execute
+     //Decode
+	 switch(opcode & 0xF000) {
+		/*
+		 * Opcode 0xANNN: Sets I to the address NNN
+		 */
+		 case 0xA000:
 		 I = 0x0FFF & opcode;
+		 pc += 2; //Each opcode is 2bytes long
+		 break;
+		 
+		/*
+		 * Opcode 0x2NNN Calls subroutine at address NNN
+		 */
+		 case 0x2000:
+			stack[sp] = pc;
+			++sp;
+			pc = opcode & 0x0FFF;
+		break;
+		/*
+		 * Opcode 0x8XY4
+		 */
+		case 0x0004: 
+		if(V[(opcode & 0x00F0) >> 4] > (0xFF - V[(opcode & 0x0F00) >> 8]))
+		{
+		  V[0xF] = 1; //carry
+		}
+		else
+		{
+		  V[0xF] = 0;
+		}
+		V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
+		pc += 2;          
+		break;
+		 /*
+		  * Two opcodes starting with 0x0
+		  */
+		 case 0x0000:
+			switch(opcode & 0x000F)
+			{
+				case 0x0000: // 0x00E0: Clears the screen
+					//Execute
+				break;
+				
+				case 0x000E: // 0x00EE: Returns from sub-routine
+					// Execute opcode
+				break;
+				
+				default:
+					printf("Unknown opcode [0x0000]: 0x%X\n", opcode);          
+			}
+		break;
+		/*
+		 * Opcode 0xFX33
+	     * Binary encoded decimal representations of VX at address I. + 1, + 2
+		 */
+		  //TJA's Solution
+		case 0x0033:
+		memory[I] = V[(opcode & 0x0F00) >> 8] / 100;
+		memory[I + 1] = (V[(opcode & 0x0F00) >> 8] / 10) % 10;
+		memory[I + 2] = (V[(opcode & 0x0F00) >> 8] % 100) % 10;
+		pc += 2;
+		break;
+		 
+		 default:
+		   printf("Unknown opcode: 0x%X\n", opcode);
 	 }
-	 
-	 
-	 pc += 2; //Each opcode is 2bytes long
-	 
-	 
-	 
 	 //Update Timers
+	  if(delay_timer > 0) {
+		--delay_timer;
+	  }
+	  if(sound_timer > 0)
+      {
+        if(sound_timer == 1)
+		{
+         printf("BEEP!\n");
+         --sound_timer;
+        }  
+	  }
  }
  //In progress
- void CPU::loadFile()
+ void CPU::loadFile(char * fN)
  {
-	 bufferSize = 4;
+	 int bufferSize = 4;
 	 char buffer[bufferSize];
 	 
 	 FILE * pFile;
 	 
-	 pFile = fopen("/file1.file", rb);
+	 pFile = fopen(fN, "rb");
+	 puts(fN);
 	 
 	 if(pFile != NULL)
 	 {
-		 setvbuf(pFile, buffer, _IOFBF, bufferSize);
+		 setvbuf(pFile, NULL, _IOFBF, bufferSize);
 		 
 		 for(int i = 0; i < bufferSize; ++i) {
-		 memory[i+0x50] = buffer[i];
+		 memory[i + 512] = buffer[i];
 		}
 		 
-		 fClose(pFile);
+		 fclose(pFile);
 	 }
 	 
 	 
