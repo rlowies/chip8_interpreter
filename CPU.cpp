@@ -1,6 +1,12 @@
 //CHIP8 - CPU
 //Font set at memory location 0x50 == 80 and onwards
 //Program starts at 0x200 (PC)
+// @author Ron Lowies
+// License: GNU General Public License (GPL) v2 
+// ( http://www.gnu.org/licenses/old-licenses/gpl-2.0.html )
+//
+// References
+// Copyright (C) 2011 Laurence Muller / www.multigesture.net
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,11 +78,19 @@
 	 sp = 0;
 	 
 	 //display
+	 
+	 
 	 //stack
-	 for(int i = 0; i < stackSize; ++i) {
+	 for(int i = 0; i < stackSize; ++i) 
+	 {
 		 stack[i] = 0;
 	 }
 	 //registers v0=vF (vF is carry register)
+	 for(int i = 0; i < 16; ++i) 
+	 {
+		 V[i] = 0;
+	 }
+	 
 	 //memory
 	 for(int i = 0; i < memSize; ++i) 
 	 {
@@ -117,7 +131,29 @@
 			stack[sp] = pc;
 			++sp;
 			pc = opcode & 0x0FFF;
+		 break;
+		/*
+		 * Opcode 0x3XNN,
+		 * Skips the next instruction if VX equals NN.
+		 */
+		 case 0x3000:
+		 if(V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) 
+		 {
+			 pc += 4;
+		 }
+		 else {
+			 pc +=2;
+		 }
+		 
+		 break;
+		 /*
+		  * Opcode 0x7XNN
+		  */
+		case 0x7000:
+		  V[(opcode & 0x0F00) >> 8] += opcode & 0x00FF;
+		  pc += 2;
 		break;
+		  
 		/*
 		 * Opcode 0x8XY4
 		 */
@@ -139,18 +175,37 @@
 		 case 0x0000:
 			switch(opcode & 0x000F)
 			{
-				case 0x0000: // 0x00E0: Clears the screen
+				//case 0x0000: // 0x00E0: Clears the screen
 					//Execute
-				break;
+					
+				//break;
 				
 				case 0x000E: // 0x00EE: Returns from sub-routine
-					// Execute opcode
+				--sp;
+				pc = stack[sp];
+				pc+=2;
 				break;
 				
 				default:
 					printf("Unknown opcode [0x0000]: 0x%X\n", opcode);          
 			}
 		break;
+		
+		case 0xE000:
+		  switch(opcode & 0x00FF)
+		  {
+		/*
+		 * Opcode EX9E: Skips the next instruction 
+		 * if the key stored in VX is pressed
+		 */ 
+		  case 0x009E:
+		  if(key[V[(opcode & 0x0F00) >> 8]] != 0)
+			pc += 4;
+		  else
+			pc += 2;
+		  break;
+		  }
+		 break;
 		
 		 case 0xF000:
 		  switch(opcode & 0x00FF) 
@@ -183,6 +238,24 @@
 			 pc+=2;
 			 
 			 break;
+			 }
+			 /*
+			  * Opcode 0xFX15 
+			  * Sets timer delay to VX
+			  */
+			 case 0x0015:
+			 delay_timer = (opcode & 0x0F00);
+			 pc += 2;
+			 break;
+			 
+			  /*
+			  * Opcode 0xFX07 
+			  * Sets VX delay to value of delay timer.
+			  */
+			 case 0x0007:
+			 V[(opcode & 0x0F00)] = delay_timer;
+			 pc += 2;
+			 break;
 			 
 			 /*
 			  * Opcode 0xFX29 
@@ -190,12 +263,11 @@
 			  * in VX. 4x5 font
 			  *
 			  */
-			  case 0x0029:
-			  //TODO:
+			 case 0x0029:
+			  I = V[(opcode & 0x0F00) >> 8] * 0x5;
+			  pc+=2;
 			  break;
-			 }
-			
-			
+			 
 			default:
 					printf("Unknown opcode [0x0000]: 0x%X\n", opcode);          
 		  }
