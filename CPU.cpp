@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "include/CPU.h"
+#include <time.h>
 
  unsigned char chip8_fontset[80] =
  { 
@@ -66,6 +67,12 @@
  //Keypad (0x0-0xF)
  unsigned char key[16];
  
+ bool drawFlag;
+ 
+ bool CPU::getDrawFlag() 
+ {
+	 return drawFlag;
+ }
  
  void CPU::initialize() 
  {
@@ -78,7 +85,9 @@
 	 sp = 0;
 	 
 	 //display
-	 
+	 for(int i = 0; i < 2048; ++i) {
+		 gfx[i] = 0;
+	 }
 	 
 	 //stack
 	 for(int i = 0; i < stackSize; ++i) 
@@ -106,7 +115,10 @@
 	 //Timers
 	 delay_timer = 0;
 	 sound_timer = 0;
-	
+	 
+	 drawFlag = true;
+
+	 srand(time(NULL));
  }
  
  void CPU::emulateCycle()
@@ -175,10 +187,13 @@
 		 case 0x0000:
 			switch(opcode & 0x000F)
 			{
-				//case 0x0000: // 0x00E0: Clears the screen
+				case 0x0000: // 0x00E0: Clears the screen
 					//Execute
-					
-				//break;
+				for(int i = 0; i < 2048; ++i)
+					gfx[i] = 0x0;
+					drawFlag = true;
+					pc += 2;
+				break;
 				
 				case 0x000E: // 0x00EE: Returns from sub-routine
 				--sp;
@@ -230,11 +245,12 @@
 			 */
 			 case 0x0065:
 			 {
-			 unsigned int X = opcode & 0x0F00;
-			 for(int i = 0; i <= X; ++i) {
-				memory[I] = V[i];
-				I += 1;
+			 
+			 for(int i = 0; i <= ((opcode & 0x0F00)>>8); ++i) {
+				V[i] = memory[I + i];
 			 }
+			 
+			 I += ((opcode & 0x0F00) >> 8) + 1;
 			 pc+=2;
 			 
 			 break;
@@ -244,7 +260,7 @@
 			  * Sets timer delay to VX
 			  */
 			 case 0x0015:
-			 delay_timer = (opcode & 0x0F00);
+			 delay_timer = V[(opcode & 0x0F00) >> 8];
 			 pc += 2;
 			 break;
 			 
@@ -253,7 +269,7 @@
 			  * Sets VX delay to value of delay timer.
 			  */
 			 case 0x0007:
-			 V[(opcode & 0x0F00)] = delay_timer;
+			 V[(opcode & 0x0F00) >> 8] = delay_timer;
 			 pc += 2;
 			 break;
 			 
@@ -278,6 +294,16 @@
 		case 0x6000:
 		V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
 		pc += 2;
+		break;
+		
+		/*
+		 * Opcode 0xCXNN
+		 * 
+		 */
+		case 0xC000:
+		printf("%X\n", opcode & 0x00FF);
+		V[(opcode & 0x0F00) >> 8] = (rand() % 255) & (opcode & 0x00FF);
+		pc+=2;
 		break;
 		
 		/*
@@ -306,7 +332,7 @@
 			}
        }
  
-         //drawFlag = true;
+         drawFlag = true;
          pc += 2;
 	 }
          break;
@@ -323,8 +349,8 @@
         if(sound_timer == 1)
 		{
          printf("BEEP!\n");
-         --sound_timer;
         }  
+		--sound_timer;
 	  }
  }
  //In progress
@@ -374,8 +400,6 @@
 		 {
 			 printf("Rom too large!");
 		 }
-		
-		
 		 
 		 fclose(pFile);
 		 free(buffer);

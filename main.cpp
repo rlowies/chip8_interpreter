@@ -18,6 +18,10 @@ void setupInput()
 	//input system (bind callbacks)
 }
 
+void drawGraphics() {
+	
+}
+
 int main(int argc, char **argv)
  {
 
@@ -48,12 +52,12 @@ int main(int argc, char **argv)
 	{
 		  
 		cpu.emulateCycle();
-		/*
+		
 		//if drawflag set 
-		if(cpu.drawFlag) {
+		if(cpu.getDrawFlag()) {
 			drawGraphics();
 		}
-		*/
+		
 		
 		// Store key press state (User input)
 		//cpu.setKeys();
