@@ -74,6 +74,12 @@
 	 return drawFlag;
  }
  
+ void CPU::setDrawFlagFalse() 
+ {
+	 drawFlag = false;
+ }
+ CPU::CPU(){}
+ CPU::~CPU(){}
  void CPU::initialize() 
  {
 	 //init memory and registers
@@ -127,15 +133,42 @@
 	 opcode = memory[pc] << 8 | memory[pc + 1];
 	 
      //Decode
-	 switch(opcode & 0xF000) {
-		/*
-		 * Opcode 0xANNN: Sets I to the address NNN
+	 switch(opcode & 0xF000) 
+     {
+          /*
+		  * Two opcodes starting with 0x0
+		  */
+		 case 0x0000:
+         {
+			switch(opcode & 0x000F)
+			{
+				case 0x0000: // 0x00E0: Clears the screen
+					//Execute
+				  for(int i = 0; i < 2048; ++i) {
+					gfx[i] = 0x0;
+                  }
+					drawFlag = true;
+					pc += 2;
+                break;
+				
+				case 0x000E: // 0x00EE: Returns from sub-routine
+				  --sp;
+				  pc = stack[sp];
+				  pc+=2;
+                break;
+				
+				default:
+					printf("Unknown opcode [0x0000]: 0x%X\n", opcode);          
+            }
+        break;
+         }
+        /*
+		 * Opcode 1NNN jumps to address NNN
+		 * 
 		 */
-		 case 0xA000:
-		 I = 0x0FFF & opcode;
-		 pc += 2; //Each opcode is 2bytes long
-		 break;
-		 
+        case 0x1000:
+            pc = opcode & 0x0FFF;
+        break;
 		/*
 		 * Opcode 0x2NNN Calls subroutine at address NNN
 		 */
@@ -149,13 +182,14 @@
 		 * Skips the next instruction if VX equals NN.
 		 */
 		 case 0x3000:
-		 if(V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) 
-		 {
+		   if(V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) 
+		   {
 			 pc += 4;
-		 }
-		 else {
+		   }
+		   else 
+           {
 			 pc +=2;
-		 }
+		   }
 		 break;
          
          /*
@@ -163,14 +197,23 @@
           * Skips the next instruction if VX doesn't equal NN. 
           */
           case 0x4000:
-          if(V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) {
-              pc+=4;
-          }
-          else
-          {
-              pc+=2;
-          }
+            if(V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) 
+            {
+                pc+=4;
+            }
+            else
+            {
+                pc+=2;
+            }
           break;
+          
+        /*
+		 * Opcode 0x6XNN
+		 */
+		case 0x6000:
+		  V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
+		  pc += 2;
+		break;
 		 /*
 		  * Opcode 0x7XNN
 		  */
@@ -183,22 +226,41 @@
         * Handles cases starting with 0x8
         */
     case 0x8000:
+    {
         switch(opcode & 0x000F)
         {
+        /*
+         * Opcode 0x8XY0
+         * Sets VX to the value of VY.
+         */
+         case 0x0000:
+           V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4];
+           pc+=2;
+         break;
+         
+         /*
+         * Opcode 0x8XY2
+         * Sets VX to VX & VY
+         */
+         case 0x0002:
+           V[(opcode & 0x0F00) >> 8] &= V[(opcode & 0x00F0) >> 4];
+           pc+=2;
+         break;
+    
 		/*
 		 * Opcode 0x8XY4
 		 */
 		case 0x0004: 
-		if(V[(opcode & 0x00F0) >> 4] > (0xFF - V[(opcode & 0x0F00) >> 8]))
-		{
-		  V[0xF] = 1; //carry
-		}
-		else
-		{
-		  V[0xF] = 0;
-		}
-		V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
-		pc += 2;          
+		  if(V[(opcode & 0x00F0) >> 4] > (0xFF - V[(opcode & 0x0F00) >> 8]))
+		  {
+		    V[0xF] = 1; //carry
+		  }
+		  else
+		  {
+		    V[0xF] = 0;
+		  }
+		  V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
+		  pc += 2;          
 		break;
         /*
          * Opcode 0x8XY5
@@ -207,203 +269,56 @@
          * and 1 when there isn't.
          */
          case 0x0005:
-         
-         if(V[(opcode & 0x00F0) >> 4] > V[(opcode & 0x0F00) >> 8]){
-             V[0xF] = 0;
-         } 
-         else 
          {
+           if(V[(opcode & 0x00F0) >> 4] > V[(opcode & 0x0F00) >> 8])
+           {
+             V[0xF] = 0; //borrow
+           } 
+           else 
+           {
              V[0xF] = 1;
+           }
+           V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
+           pc+=2;
+         break;
          }
-         V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
-         pc+=2;
-         break;
-        /*
-         * Opcode 0x8XY2
-         * Sets VX to VX & VY
-         */
-         case 0x0002:
-         V[(opcode & 0x0F00) >> 8] &= V[(opcode & 0x00F0) >> 4];
-         pc+=2;
-         break;
-        
+         
          default:
                 printf("Unknown opcode [0x8000]: 0x%X\n", opcode);          
         }
         break;
-		 /*
-		  * Two opcodes starting with 0x0
-		  */
-		 case 0x0000:
-			switch(opcode & 0x000F)
-			{
-				case 0x0000: // 0x00E0: Clears the screen
-					//Execute
-				for(int i = 0; i < 2048; ++i)
-					gfx[i] = 0x0;
-					drawFlag = true;
-					pc += 2;
-				break;
-				
-				case 0x000E: // 0x00EE: Returns from sub-routine
-				--sp;
-				pc = stack[sp];
-				pc+=2;
-				break;
-				
-				default:
-					printf("Unknown opcode [0x0000]: 0x%X\n", opcode);          
-			}
-		break;
-		
-		/*
-		 * Opcode 1NNN jumps to address NNN
-		 * TODO: Broke here
+    }
+    
+        /*
+		 * Opcode 0xANNN: Sets I to the address NNN
 		 */
-		  case 0x1000:
-          pc = opcode & 0x0FFF;
-        break;
-		
-		case 0xE000:
-		  switch(opcode & 0x00FF)
-		  {
-		/*
-		 * Opcode EX9E: Skips the next instruction 
-		 * if the key stored in VX is pressed
-		 */ 
-		  case 0x009E:
-		  if(key[V[(opcode & 0x0F00) >> 8]] != 0)
-			pc += 4;
-		  else
-			pc += 2;
-		  break;
-          
-          /*
-           * Opcode 0xEXA1 
-           * Skips the next instruction
-           * if the key stored in VX isn't pressed. 
-           */
-           case 0x00A1:
-           if(key[V[(opcode & 0x0FF) >> 8]] == 0) {
-               pc+=4;
-           }
-           else 
-           {
-               pc+=2;
-           }
-           break;
-          
-          default:
-		   printf("Unknown opcode 0xE000: 0x%X\n", opcode);
-		  }
+		 case 0xA000:
+		   I = 0x0FFF & opcode;
+		   pc += 2; //Each opcode is 2bytes long
 		 break;
-		
-		 case 0xF000:
-		  switch(opcode & 0x00FF) 
-		  {
-           /*
-            * Opcode 0xFX18
-            * Sets the sound timer to VX.
-            */
-             case 0x0018:
-             sound_timer = V[(opcode & 0x0F00) >> 8];
-             pc+=2;
-             break;
-              
-		   /*
-			* Opcode 0xFX33
-			* Binary encoded decimal representations of VX at address I. + 1, + 2
-			*/
-			//TJA's Solution
-			case 0x0033:
-		
-			memory[I] = V[(opcode & 0x0F00) >> 8] / 100;
-			memory[I + 1] = (V[(opcode & 0x0F00) >> 8] / 10) % 10;
-			memory[I + 2] = (V[(opcode & 0x0F00) >> 8] % 100) % 10;
-			pc += 2;
-		
-			break;
-			
-			/*
-			 * Opcode 0xFX65
-			 */
-			 case 0x0065:
-			 {
-			 
-			 for(int i = 0; i <= ((opcode & 0x0F00)>>8); ++i) {
-				V[i] = memory[I + i];
-			 }
-			 
-			 I += ((opcode & 0x0F00) >> 8) + 1;
-			 pc+=2;
-			 
-			 break;
-			 }
-			 /*
-			  * Opcode 0xFX15 
-			  * Sets timer delay to VX
-			  */
-			 case 0x0015:
-			 delay_timer = V[(opcode & 0x0F00) >> 8];
-			 pc += 2;
-			 break;
-			 
-			  /*
-			  * Opcode 0xFX07 
-			  * Sets VX delay to value of delay timer.
-			  */
-			 case 0x0007:
-			 V[(opcode & 0x0F00) >> 8] = delay_timer;
-			 pc += 2;
-			 break;
-			 
-			 /*
-			  * Opcode 0xFX29 
-			  * Set "I" to the location of sprite for character
-			  * in VX. 4x5 font
-			  *
-			  */
-			 case 0x0029:
-			  I = V[(opcode & 0x0F00) >> 8] * 0x5;
-			  pc+=2;
-			  break;
-			 
-			default:
-					printf("Unknown opcode [0x0000]: 0x%X\n", opcode);          
-		  }
-		  break;
-		/*
-		 * Opcode 0x6XNN
-		 */
-		case 0x6000:
-		V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
-		pc += 2;
-		break;
-		
-		/*
+         
+         /*
 		 * Opcode 0xCXNN
 		 * 
 		 */
 		case 0xC000:
-		printf("%X\n", opcode & 0x00FF);
-		V[(opcode & 0x0F00) >> 8] = (rand() % 255) & (opcode & 0x00FF);
-		pc+=2;
+		  V[(opcode & 0x0F00) >> 8] = (rand() % 0xFF) & (opcode & 0x00FF);
+		  pc+=2;
 		break;
 		
 		/*
 		 * Opcode 0xDXYN
 		 */
-		 case 0xD000:	
-		 {
-
-        unsigned short x = V[(opcode & 0x0F00) >> 8];
-		unsigned short y = V[(opcode & 0x00F0) >> 4];
-		unsigned short height = opcode & 0x000F;
-		unsigned short pixel;
+        case 0xD000:	
+        {
+          unsigned short x = V[(opcode & 0x0F00) >> 8];
+		  unsigned short y = V[(opcode & 0x00F0) >> 4];
+		  unsigned short height = opcode & 0x000F;
+		  unsigned short pixel;
  
-		V[0xF] = 0;
-		for (int yline = 0; yline < height; yline++)
-		{
+		  V[0xF] = 0;
+		  for (int yline = 0; yline < height; yline++)
+		  {
 			pixel = memory[I + yline];
 			for(int xline = 0; xline < 8; xline++)
 			{
@@ -414,12 +329,129 @@
 			gfx[x + xline + ((y + yline) * 64)] ^= 1;
 			}
 			}
-       }
+          }
  
          drawFlag = true;
          pc += 2;
-	 }
-         break;
+	    }
+        break;
+    
+		case 0xE000:
+        {
+		  switch(opcode & 0x00FF)
+		  {
+		/*
+		 * Opcode EX9E: Skips the next instruction 
+		 * if the key stored in VX is pressed
+		 */ 
+		  case 0x009E:
+		    if(key[V[(opcode & 0x0F00) >> 8]] != 0) 
+            {
+			  pc += 4;
+            }
+		    else 
+            {
+			  pc += 2;
+            }
+          break;
+          
+          /*
+           * Opcode 0xEXA1 
+           * Skips the next instruction
+           * if the key stored in VX isn't pressed. 
+           */
+           case 0x00A1:
+             if(key[V[(opcode & 0x0F00) >> 8]] == 0) 
+             {
+               pc+=4;
+             }
+             else 
+             {
+               pc+=2;
+             }
+           break;
+          
+          default:
+		   printf("Unknown opcode 0xE000: 0x%X\n", opcode);
+		  }
+		 break;
+        }
+    
+         case 0xF000:
+         {
+		  switch(opcode & 0x00FF) 
+		  {
+            /*
+			 * Opcode 0xFX07 
+			 * Sets VX delay to value of delay timer.
+			 */
+			 case 0x0007:
+			   V[(opcode & 0x0F00) >> 8] = delay_timer;
+			   pc += 2;
+			 break;
+            /*
+            * Opcode 0xFX15 
+            * Sets timer delay to VX
+            */
+            case 0x0015:
+              delay_timer = V[(opcode & 0x0F00) >> 8];
+              pc += 2;
+            break;
+             
+           /*
+            * Opcode 0xFX18
+            * Sets the sound timer to VX.
+            */
+             case 0x0018:
+               sound_timer = V[(opcode & 0x0F00) >> 8];
+               pc+=2;
+             break;
+             
+           /*
+            * Opcode 0xFX29 
+			* Set "I" to the location of sprite for character
+			* in VX. 4x5 font
+			*
+			*/
+			 case 0x0029:
+			   I = V[(opcode & 0x0F00) >> 8] * 0x5;
+			   pc+=2;
+             break;
+              
+		   /*
+			* Opcode 0xFX33
+			* Binary encoded decimal representations of VX at address I. + 1, + 2
+			*/
+			//TJA's Solution
+			case 0x0033:
+			  memory[I] = V[(opcode & 0x0F00) >> 8] / 100;
+			  memory[I + 1] = (V[(opcode & 0x0F00) >> 8] / 10) % 10;
+			  memory[I + 2] = (V[(opcode & 0x0F00) >> 8] % 100) % 10;
+			  pc += 2;
+			break;
+			
+			/*
+			 * Opcode 0xFX65
+			 */
+			 case 0x0065:
+			 {
+			 
+			   for(int i = 0; i <= ((opcode & 0x0F00)>>8); ++i) 
+               {
+                 V[i] = memory[I + i];
+			   }
+			 
+			   I += ((opcode & 0x0F00) >> 8) + 1;
+			   pc+=2;
+			 
+			 break;
+			 }
+        
+			 default:
+					printf("Unknown opcode [0xF000]: 0x%X\n", opcode);          
+		  }
+		  break;
+         }
 		 
 		 default:
 		   printf("Unknown opcode: 0x%X\n", opcode);
@@ -441,9 +473,7 @@
  bool CPU::loadFile(char * fN)
  {
 	 initialize();
-	 
-	 char * buffer;
-	 
+
 	 FILE * pFile;
 	 
 	 pFile = fopen(fN, "rb");
@@ -457,10 +487,11 @@
 		 fseek(pFile,0,SEEK_END);
 		 long size = ftell(pFile);
 		 rewind(pFile); //Set pos to beginning
-		 buffer = (char*) malloc(sizeof(char) * size);
+         char * buffer = (char*) malloc(sizeof(char) * size);
 		 if(buffer == NULL)
 		 {
 			 fputs("Ram error", stderr);
+             return false;
 		 }
 		 
 		 size_t res = fread(buffer, 1, size, pFile);

@@ -47,7 +47,7 @@ void setupInput()
 }
 
 void drawGraphics() {
-	
+	cpu.setDrawFlagFalse();
 }
 
 int main(int argc, char **argv)
