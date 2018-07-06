@@ -206,6 +206,14 @@
 			}
 		break;
 		
+		/*
+		 * Opcode 1NNN just to address NNN
+		 * TODO: Broke here
+		 */
+		 //case 0x1000:
+		 //pc = opcode & 0x0FFF;
+		 //break;
+		
 		case 0xE000:
 		  switch(opcode & 0x00FF)
 		  {
