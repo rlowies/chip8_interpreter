@@ -34,8 +34,8 @@
  };
 
  unsigned short opcode; //2 bytes for current opcode
- const int memSize = 4096;
- unsigned char memory[memSize]; //4k of memory
+ const int memSize = 4096; //4k of memory
+ unsigned char memory[memSize]; 
 
  unsigned char V[16]; //General purpose registers v0 - vE
 
@@ -156,8 +156,21 @@
 		 else {
 			 pc +=2;
 		 }
-		 
 		 break;
+         
+         /*
+          * Opcode 0x4XNN
+          * Skips the next instruction if VX doesn't equal NN. 
+          */
+          case 0x4000:
+          if(V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) {
+              pc+=4;
+          }
+          else
+          {
+              pc+=2;
+          }
+          break;
 		 /*
 		  * Opcode 0x7XNN
 		  */
@@ -166,6 +179,12 @@
 		  pc += 2;
 		break;
 		  
+        /*
+        * Handles cases starting with 0x8
+        */
+    case 0x8000:
+        switch(opcode & 0x000F)
+        {
 		/*
 		 * Opcode 0x8XY4
 		 */
@@ -181,6 +200,37 @@
 		V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
 		pc += 2;          
 		break;
+        /*
+         * Opcode 0x8XY5
+         * VY is subtracted from VX.
+         * VF is set to 0 when there's a borrow, 
+         * and 1 when there isn't.
+         */
+         case 0x0005:
+         
+         if(V[(opcode & 0x00F0) >> 4] > V[(opcode & 0x0F00) >> 8]){
+             V[0xF] = 0;
+         } 
+         else 
+         {
+             V[0xF] = 1;
+         }
+         V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
+         pc+=2;
+         break;
+        /*
+         * Opcode 0x8XY2
+         * Sets VX to VX & VY
+         */
+         case 0x0002:
+         V[(opcode & 0x0F00) >> 8] &= V[(opcode & 0x00F0) >> 4];
+         pc+=2;
+         break;
+        
+         default:
+                printf("Unknown opcode [0x8000]: 0x%X\n", opcode);          
+        }
+        break;
 		 /*
 		  * Two opcodes starting with 0x0
 		  */
@@ -207,12 +257,12 @@
 		break;
 		
 		/*
-		 * Opcode 1NNN just to address NNN
+		 * Opcode 1NNN jumps to address NNN
 		 * TODO: Broke here
 		 */
-		 //case 0x1000:
-		 //pc = opcode & 0x0FFF;
-		 //break;
+		  case 0x1000:
+          pc = opcode & 0x0FFF;
+        break;
 		
 		case 0xE000:
 		  switch(opcode & 0x00FF)
@@ -227,13 +277,39 @@
 		  else
 			pc += 2;
 		  break;
+          
+          /*
+           * Opcode 0xEXA1 
+           * Skips the next instruction
+           * if the key stored in VX isn't pressed. 
+           */
+           case 0x00A1:
+           if(key[V[(opcode & 0x0FF) >> 8]] == 0) {
+               pc+=4;
+           }
+           else 
+           {
+               pc+=2;
+           }
+           break;
+          
+          default:
+		   printf("Unknown opcode 0xE000: 0x%X\n", opcode);
 		  }
 		 break;
 		
 		 case 0xF000:
 		  switch(opcode & 0x00FF) 
 		  {
-			  
+           /*
+            * Opcode 0xFX18
+            * Sets the sound timer to VX.
+            */
+             case 0x0018:
+             sound_timer = V[(opcode & 0x0F00) >> 8];
+             pc+=2;
+             break;
+              
 		   /*
 			* Opcode 0xFX33
 			* Binary encoded decimal representations of VX at address I. + 1, + 2
@@ -372,9 +448,7 @@
 	 
 	 pFile = fopen(fN, "rb");
 	 puts(fN);
-	 
-	  
-	 
+    
 	 if(pFile != NULL)
 	 {
 		// setvbuf(pFile, buffer, _IOFBF, 4096);
@@ -414,10 +488,6 @@
 		 
 		 return true;
 	 }
-	 
-	
-	 
-	 
  }
  
  
