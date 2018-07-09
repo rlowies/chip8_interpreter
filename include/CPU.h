@@ -14,6 +14,9 @@ public:
 	bool getDrawFlag(); 
     void setDrawFlagFalse(); 
     bool endCycle;
+    
+    //Keypad (0x0-0xF)
+    unsigned char key[16];
 
  
 };

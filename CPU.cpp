@@ -41,7 +41,7 @@
  unsigned char V[16]; //General purpose registers v0 - vE
 
  unsigned short I; //Index register
-
+ bool isPressed = false;
  unsigned short pc; //Program counter
 
  /* MEMORY MAP
@@ -65,8 +65,7 @@
  unsigned short stack[stackSize];
  unsigned short sp;
  
- //Keypad (0x0-0xF)
- unsigned char key[16];
+ 
  
  bool drawFlag;
  bool endCycle = false;
@@ -254,6 +253,15 @@
            V[(opcode & 0x0F00) >> 8] &= V[(opcode & 0x00F0) >> 4];
            pc+=2;
          break;
+         
+          /*
+          * Opcode 8XY3
+          * Sets VX to VX xor VY.
+          */
+          case 0x0003:
+          V[(opcode & 0x0F00) >> 8] ^= V[(opcode & 0x00F0) >> 4];
+          pc += 2;
+          break;
     
 		/*
 		 * Opcode 0x8XY4
@@ -290,6 +298,19 @@
            pc+=2;
          break;
          }
+         /*
+         * Opcode 8XY6
+         * Shifts VY right by one and stores the result to VX 
+         * (VY remains unchanged). 
+         * VF is set to the value of the least significant bit of VY before the shift.[2]
+         */
+         case 0x0006:
+         V[0xF] = V[(opcode & 0x00F0) >> 8] & 0x1;
+         V[(opcode & 0x0F00) >> 8]  >>= 1;
+         pc+=2;
+         break;
+         
+        
          
          default:
                 printf("Unknown opcode [0x8000]: 0x%X\n", opcode);          
@@ -297,8 +318,8 @@
         break;
     }
     
+        
         /*
-         * !!TETRIS BREAKS HERE
          * Opcode 0x9XY0
          * Skips the next instruction if VX doesn't equal VY. 
          */
@@ -371,7 +392,7 @@
 		 * if the key stored in VX is pressed
 		 */ 
 		  case 0x009E:
-		    if(key[V[(opcode & 0x0F00) >> 8]] != 0) 
+            if(key[V[(opcode & 0x0F00) >> 8]] != 0) 
             {
 			  pc += 4;
             }
@@ -407,6 +428,27 @@
          {
 		  switch(opcode & 0x00FF) 
 		  {
+              
+            /*
+             * Opcode 0xF00A
+             * A key press is awaited, and then stored in VX.
+             */
+             case 0x000A:
+             {
+             
+             for(int i = 0; i <= 15; i++) {
+                 if(key[i] != 0) {
+                 V[(opcode & 0x0F00) >> 8] = i;
+                 isPressed = true;
+                 }
+                 
+                 if(!isPressed) {
+                     return; //re-cycle
+                 }
+             }
+             pc+=2;
+             }
+             break;
             /*
 			 * Opcode 0xFX07 
 			 * Sets VX delay to value of delay timer.
