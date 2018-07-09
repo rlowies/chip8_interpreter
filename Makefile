@@ -9,7 +9,7 @@ all: main.cpp
 	$(CC) main.cpp CPU.cpp $(CXXFLAGS) -o $(TARGET) -lmingw32 -LC:/SDL/SDL2/i686-w64-mingw32/lib -lSDL2main -lSDL2
 	
 run: all
-	./chip8.exe tetris.c8
+	./chip8.exe pong2.c8
 	
 clean: 
 	rm chip8.exe

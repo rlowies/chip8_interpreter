@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include "include/CPU.h"
 #include <time.h>
+#include <stdint.h>
 
  unsigned char chip8_fontset[80] =
  { 
@@ -49,7 +50,7 @@
   * 0x050-0x0A0 - Used for the built in 4x5 pixel font set (0-F)
   * 0x200-0xFFF - Program ROM and work RAM
   */
- 
+  
  //Drawing is done in XOR mode
  //Pixel state is 1 or 0
  unsigned char gfx[64 * 32]; //2048 pixels
@@ -68,6 +69,8 @@
  unsigned char key[16];
  
  bool drawFlag;
+ bool endCycle = false;
+
  
  bool CPU::getDrawFlag() 
  {
@@ -78,6 +81,11 @@
  {
 	 drawFlag = false;
  }
+ 
+ unsigned char CPU::getGfx(int i) {
+     return gfx[i];
+}
+ 
  CPU::CPU(){}
  CPU::~CPU(){}
  void CPU::initialize() 
@@ -94,7 +102,7 @@
 	 for(int i = 0; i < 2048; ++i) {
 		 gfx[i] = 0;
 	 }
-	 
+    
 	 //stack
 	 for(int i = 0; i < stackSize; ++i) 
 	 {
@@ -131,7 +139,7 @@
  {
 	 //Fetch
 	 opcode = memory[pc] << 8 | memory[pc + 1];
-	 
+     
      //Decode
 	 switch(opcode & 0xF000) 
      {
@@ -290,6 +298,24 @@
     }
     
         /*
+         * !!TETRIS BREAKS HERE
+         * Opcode 0x9XY0
+         * Skips the next instruction if VX doesn't equal VY. 
+         */
+         case 0x9000:
+         {
+           if(V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4]) 
+           {
+             pc += 4;
+           }
+           else
+           {
+             pc += 2;
+           }
+         break;
+         }
+ 
+        /*
 		 * Opcode 0xANNN: Sets I to the address NNN
 		 */
 		 case 0xA000:
@@ -408,6 +434,13 @@
              break;
              
            /*
+            * Opcode 0xFX1E
+            */
+             case 0x001E:
+             I += V[(opcode & 0x0F00) >> 8];
+             pc+=2;
+             break;
+           /*
             * Opcode 0xFX29 
 			* Set "I" to the location of sprite for character
 			* in VX. 4x5 font
@@ -468,6 +501,7 @@
         }  
 		--sound_timer;
 	  }
+      
  }
  //In progress
  bool CPU::loadFile(char * fN)
