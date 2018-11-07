@@ -8,8 +8,9 @@ I chose to write this interpreter as a challenge to myself and out of pure inter
 First you will need the [SDL2 development libraries](https://www.libsdl.org/download-2.0.php). be sure to select the correct version from the zip file (32-bit) 
 
 The makefile will look for the header file under
+
 ```
-chip8_cpp\i686-w64-mingw32\include\SDL2. 
+chip8_cpp\i686-w64-mingw32\include\SDL2
 ```
 
 You will need to use Cygwin to compile, make sure you install the 32-bit version (devel packages) and this will take a while. 
