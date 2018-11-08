@@ -29,7 +29,13 @@ $ mingw32-make
 $ mingw32-make run
 ```
 Make sure the games are located in the "games" folder.
-For now there is no way to load other games once the interpreter has launched, you can change which game is loaded within the makefile.
+For now there is no way to load other games once the interpreter has launched, you can change which game is loaded within the makefile or by typing:
+
+```
+$ chip8.exe game.c8
+```
+
+however the game will still need to be in the games folder.
 
 ### Controls
 
