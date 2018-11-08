@@ -1,13 +1,17 @@
-//CHIP8 - CPU
-//Font set at memory location 0x50 == 80 and onwards
-//Program starts at 0x200 (PC)
-// @author Ron Lowies
-// License: GNU General Public License (GPL) v2 
-// ( http://www.gnu.org/licenses/old-licenses/gpl-2.0.html )
-//
-// References
-// Copyright (C) 2011 Laurence Muller / www.multigesture.net
-
+/* CPU.c
+ * CHIP8 - CPU
+ * Font set at memory location 0x50 == 80 and onwards
+ * Program starts at 0x200 (PC)
+ *
+ * @author Ron Lowies
+ *
+ *
+ * License: GNU General Public License (GPL) v2 
+ * ( http://www.gnu.org/licenses/old-licenses/gpl-2.0.html )
+ *
+ * References
+ * Copyright (C) 2011 Laurence Muller / www.multigesture.net
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include "include/CPU.h"
@@ -33,16 +37,24 @@
   0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
   0xF0, 0x80, 0xF0, 0x80, 0x80  // F
  };
-
- unsigned short opcode; //2 bytes for current opcode
- const int memSize = 4096; //4k of memory
+ 
+ //2 bytes for current opcode
+ unsigned short opcode; 
+ //4k of memory
+ const int memSize = 4096; 
  unsigned char memory[memSize]; 
 
- unsigned char V[16]; //General purpose registers v0 - vE
-
- unsigned short I; //Index register
+ //General purpose registers v0 - vE
+ unsigned char V[16]; 
+ 
+ //Index register
+ unsigned short I; 
+ 
+ //Kew press
  bool isPressed = false;
- unsigned short pc; //Program counter
+ 
+ //Program counter
+ unsigned short pc; 
 
  /* MEMORY MAP
   * 
@@ -65,28 +77,35 @@
  unsigned short stack[stackSize];
  unsigned short sp;
  
- 
- 
  bool drawFlag;
  bool endCycle = false;
 
- 
+ /*
+  * The cpu needs to know if the screen is being drawn at times
+  */
  bool CPU::getDrawFlag() 
  {
 	 return drawFlag;
  }
- 
+ /*
+  * Sets the draw flag to false as needed
+  */
  void CPU::setDrawFlagFalse() 
  {
 	 drawFlag = false;
  }
- 
+ /*
+  * Returns the pixels that will be used to determine which ones need to be tuned on in SDL2
+  */
  unsigned char CPU::getGfx(int i) {
      return gfx[i];
 }
  
+ //Initializers
  CPU::CPU(){}
  CPU::~CPU(){}
+ 
+ 
  void CPU::initialize() 
  {
 	 //init memory and registers
@@ -103,14 +122,11 @@
 	 }
     
 	 //stack
+	 //registers v0=vF (vF is carry register)
 	 for(int i = 0; i < stackSize; ++i) 
 	 {
-		 stack[i] = 0;
-	 }
-	 //registers v0=vF (vF is carry register)
-	 for(int i = 0; i < 16; ++i) 
-	 {
-		 V[i] = 0;
+		stack[i] = 0;
+		V[i] = 0;
 	 }
 	 
 	 //memory
@@ -130,10 +146,12 @@
 	 sound_timer = 0;
 	 
 	 drawFlag = true;
-
 	 srand(time(NULL));
  }
  
+ /*
+  * Reads opcodes and performs operation
+  */
  void CPU::emulateCycle()
  {
 	 //Fetch
@@ -545,7 +563,9 @@
 	  }
       
  }
- //In progress
+ /*
+  * Loads file to CPU as binary
+  */
  bool CPU::loadFile(char * fN)
  {
 	 initialize();
@@ -557,7 +577,6 @@
     
 	 if(pFile != NULL)
 	 {
-		// setvbuf(pFile, buffer, _IOFBF, 4096);
 		 
 		 //Filesize
 		 fseek(pFile,0,SEEK_END);
@@ -592,7 +611,6 @@
 		 
 		 fclose(pFile);
 		 free(buffer);
-		 
 		 return true;
 	 }
  }

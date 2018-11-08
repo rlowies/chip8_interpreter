@@ -1,17 +1,18 @@
 CC = mingw32-g++.exe
-INCLFLAGS = -IC:\Libraries\i686-w64-mingw32\include\SDL2
+INCLFLAGS = -IC:\Users\ronlo\Documents\git\chip8_cpp\i686-w64-mingw32\include\SDL2
+LIBPATH = C:\Users\ronlo\Documents\git\chip8_cpp\i686-w64-mingw32\lib
 CXXFLAGS = $(INCLFLAGS) -std=c++0x -g -O3 -w -Wl,-subsystem,windows
 
 
 TARGET = chip8
 
 all: main.cpp
-	$(CC) main.cpp CPU.cpp $(CXXFLAGS) -o $(TARGET) -lmingw32 -LC:/SDL/SDL2/i686-w64-mingw32/lib -lSDL2main -lSDL2
+	$(CC) main.cpp CPU.cpp $(CXXFLAGS) -o $(TARGET) -lmingw32 -L$(LIBPATH) -lSDL2main -lSDL2
 	
 run: all
-	./chip8.exe pong2.c8
+	./chip8.exe tetris.c8
 	
 clean: 
-	rm chip8.exe
+	del /f chip8.exe
 	
 	
