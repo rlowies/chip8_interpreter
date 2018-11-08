@@ -20,14 +20,22 @@ You will need to use [MinGW](https://sourceforge.net/projects/mingw/files/) to c
 During installation check the mingw32-base, mingw32-gcc-g++, and msys-base check boxes.
 
 This will take a few minutes, once complete you will need to add C:\MinGW\bin at the top of the System Environment PATH variable.
+
+
 Restart CMD and simply type
 
 ```
-$ make 
-$ make run
+$ mingw32-make 
+$ mingw32-make run
 ```
-
+Make sure the games are located in the "games" folder.
 For now there is no way to load other games once the interpreter has launched, you can change which game is loaded within the makefile.
+
+### Controls
+
+W - Move left
+E - Move right
+Q - action button
 
 ### Bugs
 
