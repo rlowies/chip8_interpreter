@@ -11,7 +11,7 @@ The makefile will look for the header file and libraries under
 
 ```
 C:\Users\username\PathToGit\chip8_cpp\i686-w64-mingw32\include\SDL2
-C:\Users\username\PathToGit\chip8_cpp\i686-w64-mingw32\include\lib
+C:\Users\username\PathToGit\chip8_cpp\i686-w64-mingw32\lib
 ```
 
 Be sure to edit the makefile to your paths.
