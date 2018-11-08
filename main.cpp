@@ -1,7 +1,7 @@
 /*
  * CHIP8 INTERPRETER
  * 
- * Built as a proof of concept
+ * Built as a proof of concept 
  *
  *@author Ron Lowies
  */

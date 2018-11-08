@@ -10,7 +10,7 @@
  * ( http://www.gnu.org/licenses/old-licenses/gpl-2.0.html )
  *
  * References
- * Copyright (C) 2011 Laurence Muller / www.multigesture.net
+ * Copyright (C) 2011 Laurence Muller / www.multigesture.net 
  */
 #include <stdio.h>
 #include <stdlib.h>
