@@ -7,15 +7,20 @@ I chose to write this interpreter as a challenge to myself and out of pure inter
 
 First you will need the [SDL2 development libraries](https://www.libsdl.org/download-2.0.php). be sure to select the correct version from the zip file (32-bit) 
 
-The makefile will look for the header file under
+The makefile will look for the header file and libraries under
 
 ```
-chip8_cpp\i686-w64-mingw32\include\SDL2
+C:\Users\username\PathToGit\chip8_cpp\i686-w64-mingw32\include\SDL2
+C:\Users\username\PathToGit\chip8_cpp\i686-w64-mingw32\include\lib
 ```
 
-You will need to use Cygwin to compile, make sure you install the 32-bit version (devel packages) and this will take a while. 
+Be sure to edit the makefile to your paths.
 
-Once complete simply type 
+You will need to use [MinGW](https://sourceforge.net/projects/mingw/files/) to compile.
+During installation check the mingw32-base, mingw32-gcc-g++, and msys-base check boxes.
+
+This will take a few minutes, once complete you will need to add C:\MinGW\bin at the top of the System Environment PATH variable.
+Restart CMD and simply type
 
 ```
 $ make 
