@@ -37,7 +37,9 @@ W - Move left
 
 E - Move right
 
-Q - action button
+Q - Action button
+
+1 - Start button
 
 ### Bugs
 
