@@ -34,7 +34,9 @@ For now there is no way to load other games once the interpreter has launched, y
 ### Controls
 
 W - Move left
+
 E - Move right
+
 Q - action button
 
 ### Bugs
